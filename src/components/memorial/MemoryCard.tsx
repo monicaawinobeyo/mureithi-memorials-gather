@@ -1,8 +1,10 @@
 
 import { formatDistance } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 
 export interface Memory {
-  id: number;
+  id: number | string;
   author: string;
   content: string;
   date: string;
@@ -14,9 +16,30 @@ interface MemoryCardProps {
 }
 
 const MemoryCard = ({ memory }: MemoryCardProps) => {
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const timeAgo = formatDistance(new Date(memory.date), new Date(), { 
     addSuffix: true 
   });
+
+  useEffect(() => {
+    const fetchPhotoUrl = async () => {
+      if (memory.photo) {
+        try {
+          const { data } = await supabase.storage
+            .from('memorial_images')
+            .getPublicUrl(memory.photo);
+          
+          if (data && data.publicUrl) {
+            setPhotoUrl(data.publicUrl);
+          }
+        } catch (error) {
+          console.error("Error fetching image URL:", error);
+        }
+      }
+    };
+
+    fetchPhotoUrl();
+  }, [memory.photo]);
 
   return (
     <div className="memory-card">
@@ -30,10 +53,10 @@ const MemoryCard = ({ memory }: MemoryCardProps) => {
         </div>
       </div>
       <p className="mb-4">{memory.content}</p>
-      {memory.photo && (
+      {photoUrl && (
         <div className="mt-4">
           <img
-            src={memory.photo}
+            src={photoUrl}
             alt="Memory"
             className="rounded-md w-full max-h-80 object-cover"
           />
