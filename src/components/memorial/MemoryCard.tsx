@@ -17,6 +17,8 @@ interface MemoryCardProps {
 
 const MemoryCard = ({ memory }: MemoryCardProps) => {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+  
   const timeAgo = formatDistance(new Date(memory.date), new Date(), { 
     addSuffix: true 
   });
@@ -34,12 +36,17 @@ const MemoryCard = ({ memory }: MemoryCardProps) => {
           }
         } catch (error) {
           console.error("Error fetching image URL:", error);
+          setImageError(true);
         }
       }
     };
 
     fetchPhotoUrl();
   }, [memory.photo]);
+
+  const handleImageError = () => {
+    setImageError(true);
+  };
 
   return (
     <div className="memory-card">
@@ -53,13 +60,19 @@ const MemoryCard = ({ memory }: MemoryCardProps) => {
         </div>
       </div>
       <p className="mb-4">{memory.content}</p>
-      {photoUrl && (
+      {photoUrl && !imageError && (
         <div className="mt-4">
           <img
             src={photoUrl}
             alt="Memory"
             className="rounded-md w-full max-h-80 object-cover"
+            onError={handleImageError}
           />
+        </div>
+      )}
+      {imageError && memory.photo && (
+        <div className="mt-4 p-4 bg-gray-100 rounded-md text-center text-gray-500">
+          Image could not be loaded
         </div>
       )}
     </div>
