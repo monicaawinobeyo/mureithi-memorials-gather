@@ -4,9 +4,10 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X } from "lucide-react";
 
 interface Photo {
-  id: number;
+  id: number | string;
   url: string;
   caption: string;
+  author?: string;
 }
 
 interface PhotoGalleryProps {
@@ -22,10 +23,19 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
         {photos.map((photo) => (
           <div 
             key={photo.id} 
-            className="photo-gallery-item h-64"
+            className="photo-gallery-item h-64 relative group"
             onClick={() => setSelectedPhoto(photo)}
           >
-            <img src={photo.url} alt={photo.caption} />
+            <img 
+              src={photo.url} 
+              alt={photo.caption} 
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+            {photo.author && (
+              <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className="text-sm font-medium">{photo.author}</p>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -47,6 +57,11 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
                   className="max-h-[70vh] w-auto mx-auto object-contain"
                 />
                 <div className="bg-white p-4 mt-2 rounded-md">
+                  {selectedPhoto.author && (
+                    <p className="text-sm font-medium text-gray-500 mb-1">
+                      Shared by {selectedPhoto.author}
+                    </p>
+                  )}
                   <p className="text-center">{selectedPhoto.caption}</p>
                 </div>
               </div>

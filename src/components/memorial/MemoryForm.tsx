@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Upload, X, Crop } from "lucide-react";
+import { Upload, X, Crop, Plus, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ReactCrop, { Crop as CropType, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -14,11 +14,16 @@ interface MemoryFormProps {
   isSubmitting?: boolean;
 }
 
+interface ImageFile {
+  file: File;
+  previewUrl: string;
+}
+
 const MemoryForm = ({ onSubmit, isSubmitting = false }: MemoryFormProps) => {
   const [author, setAuthor] = useState("");
   const [content, setContent] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<ImageFile[]>([]);
+  const [currentFileIndex, setCurrentFileIndex] = useState<number | null>(null);
   const [isCropping, setIsCropping] = useState(false);
   const [crop, setCrop] = useState<CropType>({
     unit: '%',
@@ -30,33 +35,49 @@ const MemoryForm = ({ onSubmit, isSubmitting = false }: MemoryFormProps) => {
   const [completedCrop, setCompletedCrop] = useState<PixelCrop | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles: ImageFile[] = [];
       
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast.error("Please select an image file");
-        return;
+      for (let i = 0; i < e.target.files.length; i++) {
+        const file = e.target.files[i];
+        
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          toast.error(`File "${file.name}" is not an image`);
+          continue;
+        }
+        
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error(`Image "${file.name}" is larger than 5MB`);
+          continue;
+        }
+        
+        // Create preview URL
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const previewUrl = event.target?.result as string;
+          newFiles.push({ file, previewUrl });
+          
+          // If this is the first batch of files or the last file in the batch
+          if (newFiles.length === e.target.files!.length || selectedFiles.length === 0) {
+            setSelectedFiles(prev => [...prev, ...newFiles]);
+            // Start cropping the first image if no other is being cropped
+            if (selectedFiles.length === 0 && !isCropping) {
+              setCurrentFileIndex(0);
+              setIsCropping(true);
+            }
+          }
+        };
+        reader.readAsDataURL(file);
       }
-      
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("Image must be smaller than 5MB");
-        return;
-      }
-      
-      setSelectedFile(file);
-      
-      // Create preview URL
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setPreviewUrl(event.target?.result as string);
-        setIsCropping(true);
-      };
-      reader.readAsDataURL(file);
+    }
+    
+    // Reset the file input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -81,9 +102,19 @@ const MemoryForm = ({ onSubmit, isSubmitting = false }: MemoryFormProps) => {
     return false;
   }, []);
 
-  const clearSelectedFile = () => {
-    setSelectedFile(null);
-    setPreviewUrl(null);
+  const clearSelectedFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    if (currentFileIndex === index) {
+      setCurrentFileIndex(null);
+      setIsCropping(false);
+    } else if (currentFileIndex !== null && currentFileIndex > index) {
+      setCurrentFileIndex(prev => prev! - 1);
+    }
+  };
+
+  const clearAllFiles = () => {
+    setSelectedFiles([]);
+    setCurrentFileIndex(null);
     setIsCropping(false);
     setCompletedCrop(null);
     if (fileInputRef.current) {
@@ -91,8 +122,13 @@ const MemoryForm = ({ onSubmit, isSubmitting = false }: MemoryFormProps) => {
     }
   };
   
+  const startCropping = (index: number) => {
+    setCurrentFileIndex(index);
+    setIsCropping(true);
+  };
+
   const finishCropping = async () => {
-    if (!imageRef.current || !completedCrop) {
+    if (!imageRef.current || !completedCrop || currentFileIndex === null) {
       toast.error("Please select a crop area");
       return;
     }
@@ -139,19 +175,37 @@ const MemoryForm = ({ onSubmit, isSubmitting = false }: MemoryFormProps) => {
     const blob = await res.blob();
     
     // Create a new File from the Blob
-    const croppedFile = new File([blob], selectedFile?.name || 'cropped-image.jpg', { 
+    const croppedFile = new File([blob], selectedFiles[currentFileIndex].file.name || 'cropped-image.jpg', { 
       type: 'image/jpeg', 
       lastModified: Date.now() 
     });
     
     // Update the state with the cropped image
-    setSelectedFile(croppedFile);
-    setPreviewUrl(croppedDataUrl);
-    setIsCropping(false);
+    setSelectedFiles(prev => {
+      const updated = [...prev];
+      updated[currentFileIndex] = {
+        file: croppedFile,
+        previewUrl: croppedDataUrl
+      };
+      return updated;
+    });
+    
+    // Move to the next file for cropping if available
+    if (currentFileIndex < selectedFiles.length - 1) {
+      setCurrentFileIndex(currentFileIndex + 1);
+    } else {
+      setIsCropping(false);
+      setCurrentFileIndex(null);
+    }
   };
   
   const cancelCropping = () => {
-    clearSelectedFile();
+    // If canceling a specific image's cropping, remove that image
+    if (currentFileIndex !== null) {
+      clearSelectedFile(currentFileIndex);
+    } else {
+      clearAllFiles();
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -162,40 +216,80 @@ const MemoryForm = ({ onSubmit, isSubmitting = false }: MemoryFormProps) => {
       return;
     }
     
-    try {
-      let photoPath = undefined;
-      
-      // Upload the image if one is selected
-      if (selectedFile) {
-        const fileExt = selectedFile.name.split('.').pop();
+    // Only one photo can be stored per memory in the current database structure
+    // So we'll use the first selected photo
+    if (selectedFiles.length > 0) {
+      try {
+        // Use the first image for the memory
+        const firstFile = selectedFiles[0].file;
+        
+        const fileExt = firstFile.name.split('.').pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
         const filePath = `${fileName}`;
         
         const { error: uploadError } = await supabase.storage
           .from('memorial_images')
-          .upload(filePath, selectedFile);
+          .upload(filePath, firstFile);
           
         if (uploadError) {
           throw uploadError;
         }
         
-        photoPath = filePath;
+        await onSubmit({
+          author,
+          content,
+          photo: filePath
+        });
+        
+        // If there are additional images, create separate memories for them
+        // sharing the same author and content
+        for (let i = 1; i < selectedFiles.length; i++) {
+          const file = selectedFiles[i].file;
+          const fileExt = file.name.split('.').pop();
+          const additionalFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+          const additionalFilePath = `${additionalFileName}`;
+          
+          const { error } = await supabase.storage
+            .from('memorial_images')
+            .upload(additionalFilePath, file);
+            
+          if (error) {
+            console.error("Error uploading additional image:", error);
+            continue;
+          }
+          
+          await onSubmit({
+            author,
+            content,
+            photo: additionalFilePath
+          });
+        }
+        
+        setAuthor("");
+        setContent("");
+        clearAllFiles();
+        
+        toast.success("Thank you for sharing your memory");
+      } catch (error) {
+        console.error("Error submitting memory:", error);
+        toast.error("There was a problem sharing your memory. Please try again.");
       }
-      
-      await onSubmit({
-        author,
-        content,
-        photo: photoPath
-      });
-      
-      setAuthor("");
-      setContent("");
-      clearSelectedFile();
-      
-      toast.success("Thank you for sharing your memory");
-    } catch (error) {
-      console.error("Error submitting memory:", error);
-      toast.error("There was a problem sharing your memory. Please try again.");
+    } else {
+      // No photos attached
+      try {
+        await onSubmit({
+          author,
+          content
+        });
+        
+        setAuthor("");
+        setContent("");
+        
+        toast.success("Thank you for sharing your memory");
+      } catch (error) {
+        console.error("Error submitting memory:", error);
+        toast.error("There was a problem sharing your memory. Please try again.");
+      }
     }
   };
 
@@ -209,7 +303,7 @@ const MemoryForm = ({ onSubmit, isSubmitting = false }: MemoryFormProps) => {
     <div className="memory-card">
       <h3 className="text-xl font-serif mb-4">Share a Memory</h3>
       
-      {isCropping && previewUrl ? (
+      {isCropping && currentFileIndex !== null && selectedFiles[currentFileIndex] ? (
         <div className="mb-4">
           <div className="flex justify-center mb-3">
             <ReactCrop
@@ -219,7 +313,7 @@ const MemoryForm = ({ onSubmit, isSubmitting = false }: MemoryFormProps) => {
               aspect={1}
             >
               <img 
-                src={previewUrl} 
+                src={selectedFiles[currentFileIndex].previewUrl} 
                 alt="Crop preview" 
                 onLoad={(e) => onImageLoad(e.currentTarget)} 
                 className="max-h-80"
@@ -232,7 +326,7 @@ const MemoryForm = ({ onSubmit, isSubmitting = false }: MemoryFormProps) => {
               onClick={finishCropping}
               className="flex-1"
             >
-              <Crop size={18} /> Crop Image
+              <Crop size={18} className="mr-2" /> Crop Image
             </Button>
             <Button 
               type="button" 
@@ -269,10 +363,44 @@ const MemoryForm = ({ onSubmit, isSubmitting = false }: MemoryFormProps) => {
               ref={fileInputRef}
               onChange={handleFileSelect}
               accept="image/*"
+              multiple
               className="hidden"
             />
             
-            {!previewUrl && (
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              {selectedFiles.map((file, index) => (
+                <div key={index} className="relative aspect-square">
+                  <img 
+                    src={file.previewUrl} 
+                    alt={`Preview ${index + 1}`} 
+                    className="rounded-md w-full h-full object-cover"
+                    onClick={() => startCropping(index)}
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-1 right-1 rounded-full w-6 h-6 p-0"
+                    onClick={() => clearSelectedFile(index)}
+                  >
+                    <X size={12} />
+                  </Button>
+                </div>
+              ))}
+              
+              {selectedFiles.length < 5 && (
+                <button
+                  type="button"
+                  onClick={triggerFileInput}
+                  className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md aspect-square hover:bg-gray-50 transition-colors"
+                >
+                  <Plus size={20} className="mb-1" />
+                  <span className="text-xs text-gray-500">Add Photo</span>
+                </button>
+              )}
+            </div>
+            
+            {selectedFiles.length === 0 && (
               <Button 
                 type="button" 
                 variant="outline"
@@ -280,30 +408,11 @@ const MemoryForm = ({ onSubmit, isSubmitting = false }: MemoryFormProps) => {
                 className="w-full border-dashed border-2 h-24 flex flex-col items-center justify-center bg-gray-50"
               >
                 <Upload size={20} className="mb-1" />
-                <span className="text-sm">Upload a Photo</span>
+                <span className="text-sm">Upload Photos</span>
                 <span className="text-xs text-gray-500 mt-1">
-                  Optional, max 5MB
+                  Select up to 5 images (max 5MB each)
                 </span>
               </Button>
-            )}
-            
-            {previewUrl && !isCropping && (
-              <div className="relative">
-                <img 
-                  src={previewUrl} 
-                  alt="Preview" 
-                  className="rounded-md w-full h-48 object-cover"
-                />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  className="absolute top-2 right-2 rounded-full w-8 h-8 p-0"
-                  onClick={clearSelectedFile}
-                >
-                  <X size={16} />
-                </Button>
-              </div>
             )}
           </div>
           

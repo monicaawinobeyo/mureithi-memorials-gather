@@ -1,10 +1,23 @@
 
+import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import PhotoGallery from "@/components/memorial/PhotoGallery";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+interface GalleryPhoto {
+  id: number | string;
+  url: string;
+  caption: string;
+  author?: string;
+}
 
 const GalleryPage = () => {
-  // Sample photo data - in a real app, this would come from an API or database
-  const photos = [
+  const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Sample photo data for default display
+  const defaultPhotos = [
     {
       id: 1,
       url: "https://images.unsplash.com/photo-1472396961693-142e6e269027?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
@@ -47,6 +60,56 @@ const GalleryPage = () => {
     }
   ];
 
+  useEffect(() => {
+    const fetchMemoriesWithPhotos = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Fetch memories that have photos
+        const { data: memories, error } = await supabase
+          .from('memories')
+          .select('*')
+          .not('photo_path', 'is', null)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (memories && memories.length > 0) {
+          // Transform memories with photos into the GalleryPhoto format
+          const galleryPhotos: GalleryPhoto[] = await Promise.all(
+            memories.map(async (memory) => {
+              // Get the public URL for each photo
+              const { data } = await supabase.storage
+                .from('memorial_images')
+                .getPublicUrl(memory.photo_path);
+              
+              return {
+                id: memory.id,
+                url: data.publicUrl,
+                caption: memory.content,
+                author: memory.author
+              };
+            })
+          );
+          
+          // Combine user-uploaded photos with default photos
+          setPhotos([...galleryPhotos, ...defaultPhotos]);
+        } else {
+          // If no user photos found, use the default ones
+          setPhotos(defaultPhotos);
+        }
+      } catch (error) {
+        console.error('Error fetching photos:', error);
+        toast.error("Failed to load all photos");
+        setPhotos(defaultPhotos);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMemoriesWithPhotos();
+  }, []);
+
   return (
     <Layout>
       <div className="memorial-container py-12">
@@ -58,7 +121,13 @@ const GalleryPage = () => {
           </p>
         </div>
         
-        <PhotoGallery photos={photos} />
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-memorial-blue"></div>
+          </div>
+        ) : (
+          <PhotoGallery photos={photos} />
+        )}
       </div>
     </Layout>
   );
