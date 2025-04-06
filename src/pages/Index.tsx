@@ -28,9 +28,10 @@ const Index = () => {
             </div>
             <div className="md:w-1/2">
               <div className="relative rounded-lg overflow-hidden shadow-lg h-[400px] animate-fade-in" style={{ animationDelay: "0.3s" }}>
+                {/* Replace with your custom image - You'll need to upload your image first */}
                 <img
-                  src="https://images.unsplash.com/photo-1472396961693-142e6e269027?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80"
-                  alt="Stephen Mureithi"
+                  src="/your-custom-image.jpg"
+                  alt="Stephen Mureithi Mburia"
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -48,25 +49,9 @@ const Index = () => {
             </p>
           </div>
           
+          {/* Empty container for real memories to be added */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="memory-card">
-                <div className="flex items-center mb-4">
-                  <div className="mr-4 h-10 w-10 bg-memorial-blue rounded-full flex items-center justify-center text-white font-bold">
-                    {["J", "M", "A"][i-1]}
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium">{["Jane Mureithi", "Michael Kamau", "Alice Njeri"][i-1]}</h3>
-                    <p className="text-sm text-gray-500">{["2 days ago", "1 week ago", "2 weeks ago"][i-1]}</p>
-                  </div>
-                </div>
-                <p>{[
-                  "Dad always knew how to make us laugh, even during the hardest times. His strength and humor will forever be with us.",
-                  "Stephen was more than a colleague; he was a mentor and a dear friend. His advice shaped my career and his kindness touched my heart.",
-                  "My brother had the biggest heart. Always the first to help others, never asking for anything in return. I miss our long talks."
-                ][i-1]}</p>
-              </div>
-            ))}
+            {/* Memories will be populated dynamically from user submissions */}
           </div>
           
           <div className="text-center">
@@ -88,17 +73,9 @@ const Index = () => {
             </p>
           </div>
           
+          {/* Empty grid for real photos to be added */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              "https://images.unsplash.com/photo-1472396961693-142e6e269027?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
-              "https://images.unsplash.com/photo-1517022812141-23620dba5c23?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
-              "https://images.unsplash.com/photo-1439886183900-e79ec0057170?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
-              "https://images.unsplash.com/photo-1649972904349-6e44c42644a7?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80"
-            ].map((url, i) => (
-              <div key={i} className="photo-gallery-item h-48">
-                <img src={url} alt={`Gallery photo ${i+1}`} className="w-full h-full object-cover" />
-              </div>
-            ))}
+            {/* Photos will be populated dynamically from user uploads */}
           </div>
           
           <div className="text-center mt-8">

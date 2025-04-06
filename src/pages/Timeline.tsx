@@ -3,62 +3,52 @@ import Layout from "@/components/layout/Layout";
 import TimelineEvent from "@/components/memorial/TimelineEvent";
 
 const TimelinePage = () => {
-  // Sample timeline data - in a real app, this would come from an API or database
+  // Timeline data based on the About page information
   const timelineEvents = [
     {
-      date: "July 15, 1958",
+      date: "1974",
       title: "Birth",
-      description: "Stephen Mureithi was born in Nyeri County to James and Mary Mureithi."
+      description: "Stephen was born in Mwea Location, Kirinyaga County to James Mburia and Cecilia Wamaitha."
     },
     {
-      date: "1976",
-      title: "High School Graduation",
-      description: "Graduated from Alliance High School with honors in mathematics and science."
+      date: "1980s",
+      title: "Early Childhood",
+      description: "Stephen grew up as an obedient son who assisted his parents with family chores."
     },
     {
-      date: "1980",
-      title: "University Graduation",
-      description: "Earned a Bachelor's degree in Engineering from the University of Nairobi."
+      date: "1980s",
+      title: "Primary Education",
+      description: "Stephen began his early education at Thima Primary School in Kirinyaga County."
     },
     {
-      date: "1985",
+      date: "Early 1990s",
+      title: "Education",
+      description: "After his family moved to Nyahururu, Stephen enrolled at Ngare Naro Primary School and completed his studies through Standard Eight."
+    },
+    {
+      date: "2000s",
+      title: "Career Begins",
+      description: "Stephen began working with AAK Company as a driver."
+    },
+    {
+      date: "2015",
+      title: "Career Change",
+      description: "Stephen left his job and returned home, where he turned to farming."
+    },
+    {
+      date: "Date Unknown",
       title: "Marriage",
-      description: "Married his beloved wife, Jane Wambui, in a beautiful ceremony in Nairobi."
+      description: "Stephen married Teresiah Wairimu, and together they were blessed with three children: one son and two daughters."
     },
     {
-      date: "1986",
-      title: "First Child",
-      description: "Welcomed his first child, Daniel Mureithi, into the world."
+      date: "March 26, 2025",
+      title: "Tragic Incident",
+      description: "Stephen was attacked by unknown assailants along Nyahururu Busara Road."
     },
     {
-      date: "1988",
-      title: "Second Child",
-      description: "Welcomed his daughter, Sarah Mureithi, into the family."
-    },
-    {
-      date: "1995",
-      title: "Career Achievement",
-      description: "Promoted to Chief Engineer at Kenya Power, a position he held with distinction for over a decade."
-    },
-    {
-      date: "2005",
-      title: "Community Leadership",
-      description: "Founded the Mureithi Education Foundation to support bright students from disadvantaged backgrounds."
-    },
-    {
-      date: "2018",
-      title: "Retirement",
-      description: "Retired after a distinguished 35-year career, celebrated by colleagues and friends."
-    },
-    {
-      date: "2020",
-      title: "First Grandchild",
-      description: "Welcomed his first grandchild, James, son of Daniel and his wife Ruth."
-    },
-    {
-      date: "March 5, 2023",
+      date: "March 27, 2025",
       title: "Passing",
-      description: "Peacefully passed away surrounded by his loving family."
+      description: "Stephen succumbed to his injuries at Nyahururu Referral Hospital at the age of 51."
     }
   ];
 
