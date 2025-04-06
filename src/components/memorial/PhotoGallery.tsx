@@ -1,7 +1,9 @@
 
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { X } from "lucide-react";
+import { X, Upload } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 interface Photo {
   id: number | string;
@@ -16,6 +18,23 @@ interface PhotoGalleryProps {
 
 const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+
+  if (photos.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+        <div className="mb-4 bg-gray-100 p-6 rounded-full">
+          <Upload size={48} className="text-gray-400" />
+        </div>
+        <h3 className="text-xl font-serif font-medium text-gray-700 mb-2">No photos yet</h3>
+        <p className="text-gray-500 mb-6 max-w-md">
+          Be the first to share photos and memories of Stephen Mureithi.
+        </p>
+        <Button asChild className="bg-memorial-blue hover:bg-memorial-darkblue">
+          <Link to="/memories">Share Photos & Memories</Link>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div>

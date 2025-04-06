@@ -26,8 +26,8 @@ const Index = () => {
                 </Button>
               </div>
             </div>
-            <div className="md:w-1/2 px-4 md:px-0">
-              <div className="relative rounded-lg overflow-hidden shadow-lg h-[300px] md:h-[400px] w-full animate-fade-in" style={{ animationDelay: "0.3s" }}>
+            <div className="md:w-1/2 w-full px-4 md:px-0">
+              <div className="relative rounded-lg overflow-hidden shadow-lg h-[280px] sm:h-[300px] md:h-[400px] w-full animate-fade-in" style={{ animationDelay: "0.3s" }}>
                 <img
                   src="/public/3-removebg-preview.png"
                   alt="Stephen Mureithi Mburia"

@@ -299,6 +299,133 @@ const MemoryForm = ({ onSubmit, isSubmitting = false }: MemoryFormProps) => {
     }
   };
 
+  const onImageLoad = useCallback((img: HTMLImageElement) => {
+    imageRef.current = img;
+    
+    // Set initial crop area to center of the image
+    const aspect = 1;
+    const width = 90;
+    const height = width / aspect;
+    const y = (100 - height) / 2;
+    const x = (100 - width) / 2;
+    
+    setCrop({
+      unit: '%',
+      width,
+      height,
+      x,
+      y
+    });
+    
+    return false;
+  }, []);
+
+  const clearSelectedFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    if (currentFileIndex === index) {
+      setCurrentFileIndex(null);
+      setIsCropping(false);
+    } else if (currentFileIndex !== null && currentFileIndex > index) {
+      setCurrentFileIndex(prev => prev! - 1);
+    }
+  };
+
+  const clearAllFiles = () => {
+    setSelectedFiles([]);
+    setCurrentFileIndex(null);
+    setIsCropping(false);
+    setCompletedCrop(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+  
+  const startCropping = (index: number) => {
+    setCurrentFileIndex(index);
+    setIsCropping(true);
+  };
+
+  const finishCropping = async () => {
+    if (!imageRef.current || !completedCrop || currentFileIndex === null) {
+      toast.error("Please select a crop area");
+      return;
+    }
+    
+    // Create canvas for cropped image
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      toast.error("Could not create image context");
+      return;
+    }
+    
+    // Set canvas dimensions to the completed crop size
+    const pixelRatio = window.devicePixelRatio;
+    canvas.width = completedCrop.width * pixelRatio;
+    canvas.height = completedCrop.height * pixelRatio;
+    
+    // Apply scaling to the context
+    ctx.scale(pixelRatio, pixelRatio);
+    ctx.imageSmoothingQuality = 'high';
+    
+    // Calculate the source area from the original image
+    const scaleX = imageRef.current.naturalWidth / imageRef.current.width;
+    const scaleY = imageRef.current.naturalHeight / imageRef.current.height;
+    
+    // Draw the cropped image onto the canvas
+    ctx.drawImage(
+      imageRef.current,
+      completedCrop.x * scaleX,
+      completedCrop.y * scaleY,
+      completedCrop.width * scaleX,
+      completedCrop.height * scaleY,
+      0,
+      0,
+      completedCrop.width,
+      completedCrop.height
+    );
+    
+    // Convert the canvas to a data URL
+    const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.95);
+    
+    // Convert data URL to Blob
+    const res = await fetch(croppedDataUrl);
+    const blob = await res.blob();
+    
+    // Create a new File from the Blob
+    const croppedFile = new File([blob], selectedFiles[currentFileIndex].file.name || 'cropped-image.jpg', { 
+      type: 'image/jpeg', 
+      lastModified: Date.now() 
+    });
+    
+    // Update the state with the cropped image
+    setSelectedFiles(prev => {
+      const updated = [...prev];
+      updated[currentFileIndex] = {
+        file: croppedFile,
+        previewUrl: croppedDataUrl
+      };
+      return updated;
+    });
+    
+    // Move to the next file for cropping if available
+    if (currentFileIndex < selectedFiles.length - 1) {
+      setCurrentFileIndex(currentFileIndex + 1);
+    } else {
+      setIsCropping(false);
+      setCurrentFileIndex(null);
+    }
+  };
+  
+  const cancelCropping = () => {
+    // If canceling a specific image's cropping, remove that image
+    if (currentFileIndex !== null) {
+      clearSelectedFile(currentFileIndex);
+    } else {
+      clearAllFiles();
+    }
+  };
+
   return (
     <div className="memory-card">
       <h3 className="text-xl font-serif mb-4">Share a Memory</h3>
@@ -405,20 +532,17 @@ const MemoryForm = ({ onSubmit, isSubmitting = false }: MemoryFormProps) => {
                 type="button" 
                 variant="outline"
                 onClick={triggerFileInput}
-                className="w-full border-dashed border-2 h-24 flex flex-col items-center justify-center bg-gray-50"
+                className="w-full border-dashed border-2 h-16 flex items-center justify-center bg-gray-50"
               >
-                <Upload size={20} className="mb-1" />
-                <span className="text-sm">Upload Photos</span>
-                <span className="text-xs text-gray-500 mt-1">
-                  Select up to 5 images (max 5MB each)
-                </span>
+                <Upload size={18} className="mr-2" />
+                <span>Upload Photos (up to 5)</span>
               </Button>
             )}
           </div>
           
           <Button 
             type="submit" 
-            className="bg-memorial-blue hover:bg-memorial-darkblue"
+            className="bg-memorial-blue hover:bg-memorial-darkblue w-full sm:w-auto"
             disabled={isSubmitting}
           >
             {isSubmitting ? "Sharing..." : "Share Memory"}
