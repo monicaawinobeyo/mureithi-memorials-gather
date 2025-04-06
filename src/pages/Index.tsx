@@ -30,7 +30,7 @@ const Index = () => {
               <div className="relative rounded-lg overflow-hidden shadow-lg h-[400px] animate-fade-in" style={{ animationDelay: "0.3s" }}>
                 {/* Replace with your custom image - You'll need to upload your image first */}
                 <img
-                  src="/your-custom-image.jpg"
+                  src="/public/3-removebg-preview.png"
                   alt="Stephen Mureithi Mburia"
                   className="w-full h-full object-cover"
                 />
