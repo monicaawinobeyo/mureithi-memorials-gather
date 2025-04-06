@@ -1,4 +1,3 @@
-
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -27,12 +26,11 @@ const Index = () => {
               </div>
             </div>
             <div className="md:w-1/2">
-              <div className="relative rounded-lg overflow-hidden shadow-lg h-[400px] animate-fade-in" style={{ animationDelay: "0.3s" }}>
-                {/* Replace with your custom image - You'll need to upload your image first */}
+              <div className="relative rounded-lg overflow-hidden shadow-lg h-[400px] w-full animate-fade-in" style={{ animationDelay: "0.3s" }}>
                 <img
                   src="/public/3-removebg-preview.png"
                   alt="Stephen Mureithi Mburia"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain object-center"
                 />
               </div>
             </div>
@@ -49,9 +47,7 @@ const Index = () => {
             </p>
           </div>
           
-          {/* Empty container for real memories to be added */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {/* Memories will be populated dynamically from user submissions */}
           </div>
           
           <div className="text-center">
@@ -73,9 +69,7 @@ const Index = () => {
             </p>
           </div>
           
-          {/* Empty grid for real photos to be added */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Photos will be populated dynamically from user uploads */}
           </div>
           
           <div className="text-center mt-8">
