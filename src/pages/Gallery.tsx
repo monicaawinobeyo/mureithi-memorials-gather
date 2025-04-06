@@ -1,9 +1,10 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import PhotoGallery from "@/components/memorial/PhotoGallery";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 interface GalleryPhoto {
   id: number | string;
@@ -16,56 +17,12 @@ const GalleryPage = () => {
   const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Sample photo data for default display
-  const defaultPhotos = [
-    {
-      id: 1,
-      url: "https://images.unsplash.com/photo-1472396961693-142e6e269027?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
-      caption: "Stephen during our family trip to Mombasa, 2018"
-    },
-    {
-      id: 2,
-      url: "https://images.unsplash.com/photo-1517022812141-23620dba5c23?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
-      caption: "Stephen's retirement celebration, surrounded by colleagues"
-    },
-    {
-      id: 3,
-      url: "https://images.unsplash.com/photo-1439886183900-e79ec0057170?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
-      caption: "Hiking in the Aberdare Forest, one of Stephen's favorite places"
-    },
-    {
-      id: 4,
-      url: "https://images.unsplash.com/photo-1649972904349-6e44c42644a7?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
-      caption: "Stephen and Jane celebrating their 30th wedding anniversary"
-    },
-    {
-      id: 5,
-      url: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
-      caption: "Stephen loved keeping up with technology"
-    },
-    {
-      id: 6,
-      url: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
-      caption: "Stephen helping his granddaughter with her studies"
-    },
-    {
-      id: 7,
-      url: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
-      caption: "Stephen giving a community talk on education"
-    },
-    {
-      id: 8,
-      url: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
-      caption: "Stephen with his business partners at the company's 10th anniversary"
-    }
-  ];
-
   useEffect(() => {
     const fetchMemoriesWithPhotos = async () => {
       try {
         setIsLoading(true);
         
-        // Fetch memories that have photos
+        // Fetch only memories that have photos
         const { data: memories, error } = await supabase
           .from('memories')
           .select('*')
@@ -92,16 +49,15 @@ const GalleryPage = () => {
             })
           );
           
-          // Combine user-uploaded photos with default photos
-          setPhotos([...galleryPhotos, ...defaultPhotos]);
+          setPhotos(galleryPhotos);
         } else {
-          // If no user photos found, use the default ones
-          setPhotos(defaultPhotos);
+          // If no user photos found, show empty state
+          setPhotos([]);
         }
       } catch (error) {
         console.error('Error fetching photos:', error);
-        toast.error("Failed to load all photos");
-        setPhotos(defaultPhotos);
+        toast.error("Failed to load photos");
+        setPhotos([]);
       } finally {
         setIsLoading(false);
       }
@@ -112,9 +68,9 @@ const GalleryPage = () => {
 
   return (
     <Layout>
-      <div className="memorial-container py-12">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-serif font-bold text-gray-900 mb-4">Photo Gallery</h1>
+      <div className="memorial-container py-8 md:py-12 px-4 md:px-6">
+        <div className="text-center mb-8 md:mb-10">
+          <h1 className="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-3 md:mb-4">Photo Gallery</h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
             A collection of cherished moments and memories from Stephen's life. 
             Click on any photo to view it in full size.
@@ -123,10 +79,20 @@ const GalleryPage = () => {
         
         {isLoading ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-memorial-blue"></div>
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-memorial-blue"></div>
           </div>
-        ) : (
+        ) : photos.length > 0 ? (
           <PhotoGallery photos={photos} />
+        ) : (
+          <div className="text-center py-16 bg-white rounded-lg shadow-sm">
+            <h3 className="text-xl font-medium text-gray-700 mb-2">No photos shared yet</h3>
+            <p className="text-gray-500">Be the first to share a memory with a photo on the Memories page</p>
+            <div className="mt-6">
+              <Button asChild className="bg-memorial-blue hover:bg-memorial-darkblue">
+                <Link to="/memories">Share a Memory</Link>
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     </Layout>
