@@ -3,9 +3,11 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const navLinks = [
     { name: "Home", path: "/" },
@@ -17,25 +19,25 @@ const Header = () => {
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-10">
-      <div className="memorial-container py-4 flex justify-between items-center">
-        <Link to="/" className="flex items-center space-x-3">
+      <div className="memorial-container py-2 sm:py-4 flex justify-between items-center">
+        <Link to="/" className="flex items-center space-x-2 sm:space-x-3">
           <img 
             src="/public/3-removebg-preview.png" 
             alt="Memorial Logo" 
-            className="w-8 h-8 object-contain"
+            className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
           />
-          <h1 className="text-xl sm:text-2xl font-serif font-bold text-memorial-darkblue truncate">
+          <h1 className="text-base sm:text-2xl font-serif font-bold text-memorial-darkblue truncate">
             In Memory of Stephen Mureithi
           </h1>
         </Link>
         
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex space-x-8">
+        <nav className="hidden md:flex space-x-4 lg:space-x-8">
           {navLinks.map((link) => (
             <Link 
               key={link.path}
               to={link.path} 
-              className="text-gray-700 hover:text-memorial-blue transition-colors"
+              className="text-sm lg:text-base text-gray-700 hover:text-memorial-blue transition-colors"
             >
               {link.name}
             </Link>
