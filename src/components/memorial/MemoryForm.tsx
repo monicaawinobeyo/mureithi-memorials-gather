@@ -1,4 +1,3 @@
-
 import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -399,18 +398,6 @@ const MemoryForm = ({ onSubmit, isSubmitting = false }: MemoryFormProps) => {
                 </button>
               )}
             </div>
-            
-            {selectedFiles.length === 0 && (
-              <Button 
-                type="button" 
-                variant="outline"
-                onClick={triggerFileInput}
-                className="w-full border-dashed border-2 h-16 flex items-center justify-center bg-gray-50"
-              >
-                <Upload size={18} className="mr-2" />
-                <span>Upload Photos (up to 5)</span>
-              </Button>
-            )}
           </div>
           
           <Button 
