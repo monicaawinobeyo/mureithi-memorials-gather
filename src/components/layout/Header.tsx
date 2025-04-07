@@ -22,7 +22,7 @@ const Header = () => {
       <div className="memorial-container py-2 sm:py-4 flex justify-between items-center">
         <Link to="/" className="flex items-center space-x-2 sm:space-x-3">
           <img 
-            src="/public/3-removebg-preview.png" 
+            src="/3-removebg-preview.png" 
             alt="Memorial Logo" 
             className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
           />
