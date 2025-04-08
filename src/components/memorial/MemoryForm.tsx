@@ -1,3 +1,4 @@
+
 import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,6 +8,7 @@ import { Upload, X, Crop, Plus, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ReactCrop, { Crop as CropType, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface MemoryFormProps {
   onSubmit: (memory: { author: string; content: string; photo?: string }) => Promise<void>;
@@ -24,6 +26,7 @@ const MemoryForm = ({ onSubmit, isSubmitting = false }: MemoryFormProps) => {
   const [selectedFiles, setSelectedFiles] = useState<ImageFile[]>([]);
   const [currentFileIndex, setCurrentFileIndex] = useState<number | null>(null);
   const [isCropping, setIsCropping] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("memory");
   const [crop, setCrop] = useState<CropType>({
     unit: '%',
     width: 90,
@@ -207,7 +210,7 @@ const MemoryForm = ({ onSubmit, isSubmitting = false }: MemoryFormProps) => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmitMemory = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!author.trim() || !content.trim()) {
@@ -292,6 +295,48 @@ const MemoryForm = ({ onSubmit, isSubmitting = false }: MemoryFormProps) => {
     }
   };
 
+  const handleSubmitPhotosOnly = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (selectedFiles.length === 0) {
+      toast.error("Please select at least one photo to upload");
+      return;
+    }
+    
+    try {
+      // Process each photo
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i].file;
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+        const filePath = `${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('memorial_images')
+          .upload(filePath, file);
+          
+        if (uploadError) {
+          console.error("Error uploading image:", uploadError);
+          toast.error(`Failed to upload image ${i+1}. Please try again.`);
+          continue;
+        }
+        
+        // Submit with empty author and a default caption
+        await onSubmit({
+          author: "",
+          content: "Remembering Stephen Mureithi",
+          photo: filePath
+        });
+      }
+      
+      clearAllFiles();
+      toast.success(`${selectedFiles.length} photo${selectedFiles.length > 1 ? 's' : ''} uploaded successfully`);
+    } catch (error) {
+      console.error("Error uploading photos:", error);
+      toast.error("There was a problem uploading your photos. Please try again.");
+    }
+  };
+
   const triggerFileInput = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
@@ -338,76 +383,147 @@ const MemoryForm = ({ onSubmit, isSubmitting = false }: MemoryFormProps) => {
           </div>
         </div>
       ) : (
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <Input
-              placeholder="Your Name"
-              value={author}
-              onChange={(e) => setAuthor(e.target.value)}
-              className="w-full"
-            />
-          </div>
-          <div className="mb-4">
-            <Textarea
-              placeholder="Share a memory about Stephen..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="w-full h-32"
-            />
-          </div>
+        <Tabs defaultValue="memory" value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="memory">Memory & Photos</TabsTrigger>
+            <TabsTrigger value="photos">Photos Only</TabsTrigger>
+          </TabsList>
           
-          <div className="mb-4">
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileSelect}
-              accept="image/*"
-              multiple
-              className="hidden"
-            />
-            
-            <div className="grid grid-cols-3 gap-2 mb-3">
-              {selectedFiles.map((file, index) => (
-                <div key={index} className="relative aspect-square">
-                  <img 
-                    src={file.previewUrl} 
-                    alt={`Preview ${index + 1}`} 
-                    className="rounded-md w-full h-full object-cover"
-                    onClick={() => startCropping(index)}
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="absolute top-1 right-1 rounded-full w-6 h-6 p-0"
-                    onClick={() => clearSelectedFile(index)}
-                  >
-                    <X size={12} />
-                  </Button>
-                </div>
-              ))}
+          <TabsContent value="memory">
+            <form onSubmit={handleSubmitMemory}>
+              <div className="mb-4">
+                <Input
+                  placeholder="Your Name"
+                  value={author}
+                  onChange={(e) => setAuthor(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <div className="mb-4">
+                <Textarea
+                  placeholder="Share a memory about Stephen..."
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  className="w-full h-32"
+                />
+              </div>
               
-              {selectedFiles.length < 5 && (
-                <button
-                  type="button"
-                  onClick={triggerFileInput}
-                  className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md aspect-square hover:bg-gray-50 transition-colors"
-                >
-                  <Plus size={20} className="mb-1" />
-                  <span className="text-xs text-gray-500">Add Photo</span>
-                </button>
-              )}
-            </div>
-          </div>
+              <div className="mb-4">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                />
+                
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="relative aspect-square">
+                      <img 
+                        src={file.previewUrl} 
+                        alt={`Preview ${index + 1}`} 
+                        className="rounded-md w-full h-full object-cover"
+                        onClick={() => startCropping(index)}
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-1 right-1 rounded-full w-6 h-6 p-0"
+                        onClick={() => clearSelectedFile(index)}
+                      >
+                        <X size={12} />
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  {selectedFiles.length < 5 && (
+                    <button
+                      type="button"
+                      onClick={triggerFileInput}
+                      className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md aspect-square hover:bg-gray-50 transition-colors"
+                    >
+                      <Plus size={20} className="mb-1" />
+                      <span className="text-xs text-gray-500">Add Photo</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              <Button 
+                type="submit" 
+                className="bg-memorial-blue hover:bg-memorial-darkblue w-full sm:w-auto"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Sharing..." : "Share Memory"}
+              </Button>
+            </form>
+          </TabsContent>
           
-          <Button 
-            type="submit" 
-            className="bg-memorial-blue hover:bg-memorial-darkblue w-full sm:w-auto"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Sharing..." : "Share Memory"}
-          </Button>
-        </form>
+          <TabsContent value="photos">
+            <form onSubmit={handleSubmitPhotosOnly}>
+              <div className="bg-amber-50 border border-amber-100 rounded-md p-4 mb-4">
+                <p className="text-sm text-amber-800">
+                  Upload photos without adding a written memory. Photos will be shared in the gallery.
+                </p>
+              </div>
+              
+              <div className="mb-4">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                />
+                
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="relative aspect-square">
+                      <img 
+                        src={file.previewUrl} 
+                        alt={`Preview ${index + 1}`} 
+                        className="rounded-md w-full h-full object-cover"
+                        onClick={() => startCropping(index)}
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-1 right-1 rounded-full w-6 h-6 p-0"
+                        onClick={() => clearSelectedFile(index)}
+                      >
+                        <X size={12} />
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  {selectedFiles.length < 5 && (
+                    <button
+                      type="button"
+                      onClick={triggerFileInput}
+                      className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md aspect-square hover:bg-gray-50 transition-colors"
+                    >
+                      <Plus size={20} className="mb-1" />
+                      <span className="text-xs text-gray-500">Add Photo</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              <Button 
+                type="submit" 
+                className="bg-memorial-blue hover:bg-memorial-darkblue w-full sm:w-auto"
+                disabled={isSubmitting || selectedFiles.length === 0}
+              >
+                {isSubmitting ? "Uploading..." : "Upload Photos"}
+              </Button>
+            </form>
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );
